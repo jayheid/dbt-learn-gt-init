@@ -11,3 +11,16 @@ One of the following values:
 | returned       | Item has been returned                           |
 
 {% enddocs %}
+
+{% docs payment_method %}
+
+One of the following values:
+
+| Method        | definition    |
+| ------------- | ------------- |
+| credit_card   | Credit Card   |
+| coupon        | Coupon        |
+| bank_transfer | Bank transfer |
+| gift_card     | Gift card     |
+
+{% enddocs %}
