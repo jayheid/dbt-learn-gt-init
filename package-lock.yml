@@ -3,14 +3,12 @@ packages:
   name: codegen
   revision: |
     52884e848200e4a1e637b30b011b3ee4bc8f5714
-  __unrendered__: {}
+  __unrendered__:
+    __unrendered__: {}
 - package: brooklyn-data/dbt_artifacts
   name: dbt_artifacts
   version: 2.9.3
 - package: dbt-labs/dbt_utils
   name: dbt_utils
   version: 1.3.2
-- package: gitlabhq/snowflake_spend
-  name: snowflake_spend
-  version: 1.4.0
-sha1_hash: 9d6b4c4004a9b72fef5f35806fc8462008070bae
+sha1_hash: 33170aaf53de968ff15eb1d8d3b59adc0c9f87f2
