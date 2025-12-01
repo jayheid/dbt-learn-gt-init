@@ -19,9 +19,18 @@ payments as (
 
 ),
 
--- basic staging
-
--- intermediate
+-- logical
+failed_payments as (
+    select 
+        order_id as order_id, 
+        max(created_at) as payment_finalized_date, 
+        sum(amount) / 100.0 as total_amount_paid
+    from 
+        payments
+    where 
+        status <> 'fail'
+    group by 1
+),
 paid_orders as (
     select 
         orders.order_id as order_id,
@@ -33,13 +42,7 @@ paid_orders as (
         c.first_name    as customer_first_name,
         c.last_name as customer_last_name
     from orders
-    left join (
-        select order_id as order_id, max(created_at) as payment_finalized_date, sum(amount) / 100.0 as total_amount_paid
-        from 
-            payments
-        where 
-            status <> 'fail'
-        group by 1) p on orders.order_id = p.order_id
+    left join failed_payments p on orders.order_id = p.order_id
     left join customers c on orders.customer_id = c.customer_id ),
 
 customer_orders as (
@@ -52,11 +55,18 @@ customer_orders as (
         left join orders on orders.customer_id = c.customer_id 
     group by 1
 ),
-
+amount_paid_by_order as (
+    select
+        p.order_id,
+        sum(t2.total_amount_paid) as clv_bad
+    from 
+        paid_orders p
+        left join paid_orders t2 on p.customer_id = t2.customer_id and p.order_id >= t2.order_id
+    group by 1
+    order by p.order_id
+),
 
 -- final
-
-
 final as (
 select
     p.*,
@@ -70,17 +80,7 @@ select
 from 
     paid_orders p
     left join customer_orders as c using (customer_id)
-    left join 
-    (
-        select
-            p.order_id,
-            sum(t2.total_amount_paid) as clv_bad
-        from 
-            paid_orders p
-            left join paid_orders t2 on p.customer_id = t2.customer_id and p.order_id >= t2.order_id
-        group by 1
-        order by p.order_id
-    ) x on x.order_id = p.order_id
+    left join amount_paid_by_order x on x.order_id = p.order_id
     -- order by order_id
 )
 
