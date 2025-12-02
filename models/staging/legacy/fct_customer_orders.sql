@@ -22,7 +22,7 @@ payments as (
 -- logical
 failed_payments as (
     select 
-        order_id as order_id, 
+        order_id, 
         max(created_at) as payment_finalized_date, 
         sum(amount) / 100.0 as total_amount_paid
     from 
@@ -33,23 +33,22 @@ failed_payments as (
 ),
 paid_orders as (
     select 
-        orders.order_id as order_id,
-        orders.customer_id	as customer_id,
+        orders.order_id,
+        orders.customer_id,
         orders.order_date as order_placed_at,
         orders.status as order_status,
         p.total_amount_paid,
         p.payment_finalized_date,
-        c.first_name    as customer_first_name,
-        c.last_name as customer_last_name
     from orders
     left join failed_payments p on orders.order_id = p.order_id
     left join customers c on orders.customer_id = c.customer_id ),
 
 customer_orders as (
-    select c.customer_id as customer_id
-    , min(order_date) as first_order_date
-    , max(order_date) as most_recent_order_date
-    , count(orders.order_id) as number_of_orders
+    select 
+        c.customer_id,
+        min(order_date) as first_order_date,
+        max(order_date) as most_recent_order_date,
+        count(orders.order_id) as number_of_orders
     from 
         customers c 
         left join orders on orders.customer_id = c.customer_id 
