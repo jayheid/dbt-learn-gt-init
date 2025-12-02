@@ -2,12 +2,12 @@
 with orders as (
     select
         *
-    from {{ref('stg_jaffle_shop_orders')}}      
+    from {{source('jaffle_shop', 'orders')}}   
 ),
 customers as (
     select 
         *
-    from {{ref('stg_jaffle_shop_customers')}}
+    from {{source('jaffle_shop', 'orders')}}
 
 ),
 
@@ -15,12 +15,12 @@ payments as (
     select
         *
     from 
-        {{ref('stg_stripe_payments')}}
+        {{source('stripe', 'payments')}}
 
 ),
 
 -- logical
-failed_payments as (
+completed_payments as (
     select 
         order_id, 
         max(created_at) as payment_finalized_date, 
@@ -40,20 +40,9 @@ paid_orders as (
         p.total_amount_paid,
         p.payment_finalized_date,
     from orders
-    left join failed_payments p on orders.order_id = p.order_id
+    left join completed_payments p on orders.order_id = p.order_id
     left join customers c on orders.customer_id = c.customer_id ),
 
-customer_orders as (
-    select 
-        c.customer_id,
-        min(order_date) as first_order_date,
-        max(order_date) as most_recent_order_date,
-        count(orders.order_id) as number_of_orders
-    from 
-        customers c 
-        left join orders on orders.customer_id = c.customer_id 
-    group by 1
-),
 amount_paid_by_order as (
     select
         p.order_id,
@@ -71,14 +60,18 @@ select
     p.*,
     row_number() over (order by p.order_id) as transaction_seq,
     row_number() over (partition by customer_id order by p.order_id) as customer_sales_seq,
-    case when c.first_order_date = p.order_placed_at
-    then 'new'
-    else 'return' end as nvsr,
+    case 
+        (when rank() over (partition by customer_id 
+            order by order_placed_at, order_id)) = 1
+        then 'new'
+        else 'return' 
+    end as nvsr,
     x.clv_bad as customer_lifetime_value,
-    c.first_order_date as fdos
+    first_value(paid_orders.order_placed_at) over 
+        (partition by paid_orders.customer_id 
+        order by paid_orders.order_placed_at) as fdos
 from 
     paid_orders p
-    left join customer_orders as c using (customer_id)
     left join amount_paid_by_order x on x.order_id = p.order_id
     -- order by order_id
 )
