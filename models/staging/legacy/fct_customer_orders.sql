@@ -2,12 +2,12 @@
 with orders as (
     select
         *
-    from {{source('jaffle_shop', 'orders')}}   
+    from {{ref('stg_jaffle_shop_orders')}}   
 ),
 customers as (
     select 
         *
-    from {{source('jaffle_shop', 'orders')}}
+    from {{ref('stg_jaffle_shop_customers')}}
 
 ),
 
@@ -15,33 +15,17 @@ payments as (
     select
         *
     from 
-        {{source('stripe', 'payments')}}
+        {{ref('stg_stripe_payments')}}
 
 ),
 
 -- logical
-completed_payments as (
-    select 
-        order_id, 
-        max(created_at) as payment_finalized_date, 
-        sum(amount) / 100.0 as total_amount_paid
-    from 
-        payments
-    where 
-        status <> 'fail'
-    group by 1
-),
 paid_orders as (
     select 
-        orders.order_id,
-        orders.customer_id,
-        orders.order_date as order_placed_at,
-        orders.status as order_status,
-        p.total_amount_paid,
-        p.payment_finalized_date,
-    from orders
-    left join completed_payments p on orders.order_id = p.order_id
-    left join customers c on orders.customer_id = c.customer_id ),
+        *
+    from
+        {{ref('int_orders')}}    
+),
 
 amount_paid_by_order as (
     select
