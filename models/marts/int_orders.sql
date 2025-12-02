@@ -3,18 +3,12 @@ with orders as (
         *
     from {{ref('stg_jaffle_shop_orders')}}   
 ),
-customers as (
-    select 
-        *
-    from {{source('stg_jaffle_shop_customers')}}
-
-),
 
 payments as (
     select
         *
     from 
-        {{source('stg_stripe_payments')}}
+        {{ref('stg_stripe_payments')}}
 
 ),
 
@@ -39,8 +33,8 @@ paid_orders as (
         completed_payments.total_amount_paid,
         completed_payments.payment_finalized_date,
     from orders
-    left join completed_payments on orders.order_id = p.order_id
-),
+    left join completed_payments on orders.order_id = completed_payments.order_id
+)
 
 select 
     * 
